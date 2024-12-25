@@ -1,35 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import * as React from 'react';
+
+// "bridge" that makes "auto-refresh" possible is react Fast Refresh on React's side and Hot Module Replacement on dev server side
+// jsx enables combining of markup (HTML) and logic (JS)
+
+const welcome = {
+  greeting : "Hey",
+  title : "React"
+};
+
+
+function getTitle(title : string) {
+  return welcome.title.concat(title);
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  // React component (App Component specifically) is just a js function, CamelCase + staring capital (determined by function starting with Capital)
+  // specifically function component, most common although other types
+  // function compoent runs every time the component is displayed in the browser: for the initial rendering and any subsequent re-renders
+  
+  // htmlFor reflects attribute in vanilla html, due to impementation detauls of React
+  // TSX closer to js than html, so uses camelCase
+  const nums = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  
+  const numItems = nums.map((num) => ( // # nums to jsx objects
+    <li>
+      {num}
+    </li>
+  ));
+  
+  return ( // {title} calls VARIABLE title! how TSX differs from pure HTML
+    <div>
+      <h1>{getTitle(' ')}{welcome.greeting}</h1> 
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+      <label htmlFor="test_input">Test</label>
+      <input type="text" id="test_input" name="test_input"></input>
+      <ul>{numItems}</ul>
+    </div>
+  );
 }
 
 export default App
