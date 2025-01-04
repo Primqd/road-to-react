@@ -19,9 +19,12 @@ type CallbackFunc = (event : React.ChangeEvent<HTMLInputElement>) => void; // la
 // both are fine to use: just make sure to do either consistently :)
 // * although implicit return statemeent might introduce tedious refactorings???
 
-function Search(props : {searchTerm : string, onSearch : CallbackFunc}) {
+type SearchProps = { searchTerm : string, onSearch : CallbackFunc };
+function Search({ searchTerm, onSearch} : SearchProps) {
   // console.log("Search component rendered!")
   // component for the serach bar
+
+  // "props destructuring via object destructing" (works in js too!) const {searchTerm, onSearch} = props;
 
   const handleBlur = (event : React.FocusEvent<HTMLInputElement>) => {
     console.log(event);
@@ -30,24 +33,41 @@ function Search(props : {searchTerm : string, onSearch : CallbackFunc}) {
   return(
     <div>
       <label htmlFor="test_input">Search: </label>
-      <input type="text" id="test_input" name="test_input" onChange={props.onSearch} onBlur={handleBlur}></input> {/*remember, pass function to values; not return value of function!*/}
+      <input type="text" id="test_input" name="test_input" onChange={onSearch} onBlur={handleBlur} value = {searchTerm}>
+      </input> {/*remember, pass function to values; not return value of function! value parameter forces sync with react state instead of letting component maintain its own independent state: controlled component*/}
 
-      <p>Searching for <strong>{props.searchTerm}</strong></p>
+      <p>Searching for <strong>{searchTerm}</strong></p>
     </div>
   );
 }
 
-function Item(props : {item : StoryType, index : number}) {
+type ItemProps = {item : StoryType, index : number};
+/*
+Nested destructuring works too!
+type ItemProps = {{title, url, author, num_comments, points, objectID} : StoryType, index : number};
+
+Or "spread and rest" operators: pass every property of item directly to the Item component
+type ItemProps = {title : string, url : string, author : string, num_comments : number, points : number, objectID : string}
+
+Can be improved using "spread operator": automatically passes object's key-value pairs as attribute-values pairs to JSX element
+... <Item key = {item.objectID} {...item}> (From list component)
+
+Similar to "rest operator", last part of object destructuring
+type ItemProps = {{num_comments : number, points : number, objectID : number, ...authorData : {title : string, url : string, author : string}}};
+
+rest at left side of an assignment, spread occurs on right of assignment
+*/
+function Item({item, index} : ItemProps) {
   // console.log("Item component rendered!")
   return (
-    <li key = {props.item.objectID}>
+    <li key = {item.objectID}>
       <span>
-        <a href = {props.item.url}>{props.item.title} </a>
+        <a href = {item.url}>{item.title} </a>
       </span>
-      <span>{props.item.author} </span>
-      <span>{props.item.num_comments} </span>
-      <span>{props.item.points} </span>
-      <span>{props.index}</span> {/*index of item in list!*/}
+      <span>{item.author} </span>
+      <span>{item.num_comments} </span>
+      <span>{item.points} </span>
+      <span>{index}</span> {/*index of item in list!*/}
     </li>
   );
 }
@@ -55,9 +75,10 @@ function Item(props : {item : StoryType, index : number}) {
 // child component of app, leaf component (doesn't render any other components)
 // component similar idea to 'class' in other
 // we use components as elements anywhere else, generate instances of List
-function List(props : { list: StoryType[], filterKey : string}) { // props: everything we pass down from parent to child, cannot be modified (const)
+type ListProps = { list: StoryType[], filterKey : string};
+function List({list, filterKey} : ListProps) { // props: everything we pass down from parent to child, cannot be modified (const)
   // console.log("List component rendered!")
-  var searchedList : StoryType[] = props.list.filter((item : StoryType) => (item.title.toLowerCase().includes(props.filterKey.toLowerCase()))); // new list, filters by if the title contains the filterKey as a substring
+  var searchedList : StoryType[] = list.filter((item : StoryType) => (item.title.toLowerCase().includes(filterKey.toLowerCase()))); // new list, filters by if the title contains the filterKey as a substring
   return (
   <ul>
     {/*each DIRECT decendant of ul needs key: even component!*/}
