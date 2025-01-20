@@ -8,8 +8,20 @@ type StoryType =  { // type for storing "stories"
   points: number;
   objectID: string;
 };
-
 type CallbackFunc = (event : React.ChangeEvent<HTMLInputElement>) => void; // lambda type for onSearch
+
+// hooks should always start with 'use'
+const useStorageState = (key : string, initialState : string) : [string, React.Dispatch<React.SetStateAction<string>>] => { // custom react hook that acts like useState but links with storage
+  const [value, setValue] = React.useState(
+    localStorage.getItem(key) || initialState
+  );
+
+  React.useEffect(() => {
+    localStorage.setItem(key, value);
+  }, [value, key]);
+
+  return [value, setValue];
+}
 
 // npm run dev
 // "bridge" that makes "auto-refresh" possible is react Fast Refresh on React's side and Hot Module Replacement on dev server side
@@ -122,9 +134,24 @@ function App() {
     },
   ];
 
-    // [current_state, function to change state], like read n write
-  // useState is "React Hook": state can be anything from string to complex datastructure
-  const [searchTerm, setSearchTerm] = React.useState(''); // "stateful value": may change over time. when changed, causes rerender of children up to parent where stateful value is defined
+  /*
+  [current_state, function to change state], like read n write
+  useState is "React Hook": state can be anything from string to complex datastructure
+  const [searchTerm, setSearchTerm] = React.useState(
+    localStorage.getItem('search') || ''
+  ); "stateful value": may change over time. when changed, causes rerender of children up to parent where stateful value is defined
+  */
+  
+  const [searchTerm, setSearchTerm] = useStorageState('search', ''); // custom React hook! see "useStorageState"
+
+  /*
+  "useEffect" hook: first arg is function that runs side effect, second arg is "dependency list"
+  when variable in "dependency list" changes, calls "side effect function" (or when variable is initalized for first time)
+  empty depedency list = runs on every render
+  React.useEffect(() => {
+    localStorage.setItem('search', searchTerm);
+  }, [searchTerm]);
+  */
 
   // callback handler: event handler that allows "communication" between parent and child components (pass as prop to child, lifting state)
   const handleSearch = (event : React.ChangeEvent<HTMLInputElement>) => { // html input type
