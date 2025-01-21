@@ -23,18 +23,19 @@ const useStorageState = (key : string, initialState : string) : [string, React.D
   return [value, setValue];
 }
 
-// npm run dev
-// "bridge" that makes "auto-refresh" possible is react Fast Refresh on React's side and Hot Module Replacement on dev server side
-// jsx enables combining of markup (HTML) and logic (JS): map allows mapping from js array to html
+/*
+npm run dev
+"bridge" that makes "auto-refresh" possible is react Fast Refresh on React's side and Hot Module Replacement on dev server side
+jsx enables combining of markup (HTML) and logic (JS): map allows mapping from js array to html
 
-// function Blah() {return ...} vs const Blah = () => {return ...} or const Blah = () => (...): lambda function
-// both are fine to use: just make sure to do either consistently :)
-// * although implicit return statemeent might introduce tedious refactorings???
+function Blah() {return ...} vs const Blah = () => {return ...} or const Blah = () => (...): lambda function
+both are fine to use: just make sure to do either consistently :)
+* although implicit return statemeent might introduce tedious refactorings???
+*/
 
-type SearchProps = { searchTerm : string, onSearch : CallbackFunc };
-function Search({ searchTerm, onSearch} : SearchProps) {
-  // console.log("Search component rendered!")
-  // component for the serach bar
+type SearchProps = {id : string, value : any, type : string, onInputChange : CallbackFunc, children : any}; // value = same type as in "type"
+function InputWithLabel({ id, value, type, onInputChange, children} : SearchProps) {
+  // children = anything passed between the react compoonent (behaves like native html)
 
   // "props destructuring via object destructing" (works in js too!) const {searchTerm, onSearch} = props;
 
@@ -43,13 +44,14 @@ function Search({ searchTerm, onSearch} : SearchProps) {
   }
 
   return(
-    <div>
-      <label htmlFor="test_input">Search: </label>
-      <input type="text" id="test_input" name="test_input" onChange={onSearch} onBlur={handleBlur} value = {searchTerm}>
+    <React.Fragment> {/*Same as <>: packager for elements, w/out introducing useless div*/}
+      <label htmlFor={id}>{children}</label>
+      &nbsp; {/*makes sure label and search always go together */}
+      <input type={type} id={id} name={id} onChange={onInputChange} onBlur={handleBlur} value = {value}>
       </input> {/*remember, pass function to values; not return value of function! value parameter forces sync with react state instead of letting component maintain its own independent state: controlled component*/}
 
-      <p>Searching for <strong>{searchTerm}</strong></p>
-    </div>
+      <p>Searching for <strong>{value}</strong></p>
+    </React.Fragment>
   );
 }
 
@@ -84,9 +86,11 @@ function Item({item, index} : ItemProps) {
   );
 }
 
-// child component of app, leaf component (doesn't render any other components)
-// component similar idea to 'class' in other
-// we use components as elements anywhere else, generate instances of List
+/*
+child component of app, leaf component (doesn't render any other components)
+component similar idea to 'class' in other
+we use components as elements anywhere else, generate instances of List
+*/
 type ListProps = { list: StoryType[], filterKey : string};
 function List({list, filterKey} : ListProps) { // props: everything we pass down from parent to child, cannot be modified (const)
   // console.log("List component rendered!")
@@ -103,18 +107,22 @@ function List({list, filterKey} : ListProps) { // props: everything we pass down
 
 // entry point or root component; root of component tree
 function App() {
-  // console.log("App component rendered!")
+  /*
+  console.log("App component rendered!")
 
-  // React component (App Component specifically) is just a js function, CamelCase + staring capital (determined by function starting with Capital)
-  // specifically function component, most common although other types
-  // function compoent runs every time the component is displayed in the browser: for the initial rendering and any subsequent re-renders
+  React component (App Component specifically) is just a js function, CamelCase + staring capital (determined by function starting with Capital)
+  specifically function component, most common although other types
+  function compoent runs every time the component is displayed in the browser: for the initial rendering and any subsequent re-renders
 
-  // htmlFor reflects attribute in vanilla html, due to impementation detauls of React
-  // TSX closer to js than html, so uses camelCase
+  htmlFor reflects attribute in vanilla html, due to impementation detauls of React
+  TSX closer to js than html, so uses camelCase
 
-  // points = popularity
-  // don't fit standard js naming conventions
-  // key attribute used for efficent rerender: when have to rerender, checks whether item has changed; can efficently exchanged changed item w/ key identifier
+  points = popularity
+  don't fit standard js naming conventions
+  key attribute used for efficent rerender: when have to rerender, checks whether item has changed; can efficently exchanged changed item w/ key identifier
+  */
+
+
   const stories : StoryType[] = [
     {
       title : 'React',
@@ -162,7 +170,15 @@ function App() {
     <div>
       <h1>My Hacker Stories</h1>
 
-      <Search searchTerm = {searchTerm} onSearch = {handleSearch}/>
+      <InputWithLabel
+        id = 'search'
+        value = {searchTerm}
+        type = 'text'
+        onInputChange = {handleSearch}
+      >
+        <strong>Search: </strong>
+
+      </InputWithLabel>
 
       <hr /> {/*hr = line break*/}
 
