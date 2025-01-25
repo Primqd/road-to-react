@@ -8,7 +8,6 @@ type StoryType =  { // type for storing "stories"
   points: number;
   objectID: string;
 };
-type CallbackFunc = (event : React.ChangeEvent<HTMLInputElement>) => void; // lambda type for onSearch
 
 // hooks should always start with 'use'
 const useStorageState = (key : string, initialState : string) : [string, React.Dispatch<React.SetStateAction<string>>] => { // custom react hook that acts like useState but links with storage
@@ -33,7 +32,7 @@ both are fine to use: just make sure to do either consistently :)
 * although implicit return statemeent might introduce tedious refactorings???
 */
 
-type SearchProps = {id : string, value : any, type : string, onInputChange : CallbackFunc, isFocused : boolean, children : any}; // value = same type as in "type"
+type SearchProps = {id : string, value : any, type : string, onInputChange : (event : React.ChangeEvent<HTMLInputElement>) => void, isFocused : boolean, children : any}; // value = same type as in "type"
 function InputWithLabel({ id, value, type, onInputChange, isFocused, children} : SearchProps) {
   // children = anything passed between the react compoonent (behaves like native html)
   // "props destructuring via object destructing" (works in js too!) const {searchTerm, onSearch} = props;
@@ -69,7 +68,7 @@ function InputWithLabel({ id, value, type, onInputChange, isFocused, children} :
   );
 }
 
-type ItemProps = {item : StoryType, index : number};
+type ItemProps = {item : StoryType, deleteItem : (item_to_remove : StoryType) => void, index : number};
 /*
 Nested destructuring works too!
 type ItemProps = {{title, url, author, num_comments, points, objectID} : StoryType, index : number};
@@ -85,7 +84,7 @@ type ItemProps = {{num_comments : number, points : number, objectID : number, ..
 
 rest at left side of an assignment, spread occurs on right of assignment
 */
-function Item({item, index} : ItemProps) {
+function Item({item, deleteItem, index} : ItemProps) {
   // console.log("Item component rendered!")
   return (
     <li key = {item.objectID}>
@@ -96,6 +95,12 @@ function Item({item, index} : ItemProps) {
       <span>{item.num_comments} </span>
       <span>{item.points} </span>
       <span>{index}</span> {/*index of item in list!*/}
+      <input
+        type = "button"
+        value = "remove this element"
+        onClick={() => (deleteItem(item))}
+      >
+      </input>
     </li>
   );
 }
@@ -105,15 +110,16 @@ child component of app, leaf component (doesn't render any other components)
 component similar idea to 'class' in other
 we use components as elements anywhere else, generate instances of List
 */
-type ListProps = { list: StoryType[], filterKey : string};
-function List({list, filterKey} : ListProps) { // props: everything we pass down from parent to child, cannot be modified (const)
+type ListProps = { list: StoryType[], deleteItem : (item : StoryType) => void, filterKey : string};
+function List({list, deleteItem, filterKey} : ListProps) { // props: everything we pass down from parent to child, cannot be modified (const)
   // console.log("List component rendered!")
   var searchedList : StoryType[] = list.filter((item : StoryType) => (item.title.toLowerCase().includes(filterKey.toLowerCase()))); // new list, filters by if the title contains the filterKey as a substring
+
   return (
   <ul>
     {/*each DIRECT decendant of ul needs key: even component!*/}
     {searchedList.map((item : StoryType , index : number) => (
-      <Item key={item.title} item = {item} index = {index} />
+      <Item key={item.title} item = {item} deleteItem={deleteItem} index = {index} />
       ))}
   </ul>
   );
@@ -137,104 +143,106 @@ function App() {
   */
 
 
-  const stories : StoryType[] = [
-    {
-      title : 'React',
-      url : 'https://reactjs.org/',
-      author : 'Jordan Walke',
-      num_comments : 3,
-      points : 4,
-      objectID : "0",
-    },
-    {
-      title : 'Redux',
-      url : 'https://redus.js.org/',
-      author : 'Dan Abramov, Andrew Clark',
-      num_comments : 2,
-      points : 5,
-      objectID : "1",
-    },
-    {
-      title: 'Vue.js',
-      url: 'https://vuejs.org/',
-      author: 'Evan You',
-      num_comments: 8,
-      points: 7,
-      objectID: "2",
-    },
-    {
-      title: 'Angular',
-      url: 'https://angular.io/',
-      author: 'Google',
-      num_comments: 6,
-      points: 6,
-      objectID: "3",
-    },
-    {
-      title: 'Svelte',
-      url: 'https://svelte.dev/',
-      author: 'Rich Harris',
-      num_comments: 10,
-      points: 9,
-      objectID: "4",
-    },
-    {
-      title: 'Node.js',
-      url: 'https://nodejs.org/',
-      author: 'Ryan Dahl',
-      num_comments: 15,
-      points: 10,
-      objectID: "5",
-    },
-    {
-      title: 'Deno',
-      url: 'https://deno.land/',
-      author: 'Ryan Dahl',
-      num_comments: 5,
-      points: 8,
-      objectID: "6",
-    },
-    {
-      title: 'Next.js',
-      url: 'https://nextjs.org/',
-      author: 'Vercel',
-      num_comments: 12,
-      points: 11,
-      objectID: "7",
-    },
-    {
-      title: 'Gatsby',
-      url: 'https://gatsbyjs.com/',
-      author: 'Kyle Mathews',
-      num_comments: 4,
-      points: 5,
-      objectID: "8",
-    },
-    {
-      title: 'Bootstrap',
-      url: 'https://getbootstrap.com/',
-      author: 'Twitter',
-      num_comments: 20,
-      points: 15,
-      objectID: "9",
-    },
-    {
-      title: 'Tailwind CSS',
-      url: 'https://tailwindcss.com/',
-      author: 'Adam Wathan',
-      num_comments: 18,
-      points: 14,
-      objectID: "10",
-    },
-    {
-      title: 'Electron',
-      url: 'https://electronjs.org/',
-      author: 'GitHub',
-      num_comments: 7,
-      points: 6,
-      objectID: "11",
-    },
-  ];
+  const [stories, setStories] = React.useState(
+    [
+      {
+        title : 'React',
+        url : 'https://reactjs.org/',
+        author : 'Jordan Walke',
+        num_comments : 3,
+        points : 4,
+        objectID : "0",
+      },
+      {
+        title : 'Redux',
+        url : 'https://redus.js.org/',
+        author : 'Dan Abramov, Andrew Clark',
+        num_comments : 2,
+        points : 5,
+        objectID : "1",
+      },
+      {
+        title: 'Vue.js',
+        url: 'https://vuejs.org/',
+        author: 'Evan You',
+        num_comments: 8,
+        points: 7,
+        objectID: "2",
+      },
+      {
+        title: 'Angular',
+        url: 'https://angular.io/',
+        author: 'Google',
+        num_comments: 6,
+        points: 6,
+        objectID: "3",
+      },
+      {
+        title: 'Svelte',
+        url: 'https://svelte.dev/',
+        author: 'Rich Harris',
+        num_comments: 10,
+        points: 9,
+        objectID: "4",
+      },
+      {
+        title: 'Node.js',
+        url: 'https://nodejs.org/',
+        author: 'Ryan Dahl',
+        num_comments: 15,
+        points: 10,
+        objectID: "5",
+      },
+      {
+        title: 'Deno',
+        url: 'https://deno.land/',
+        author: 'Ryan Dahl',
+        num_comments: 5,
+        points: 8,
+        objectID: "6",
+      },
+      {
+        title: 'Next.js',
+        url: 'https://nextjs.org/',
+        author: 'Vercel',
+        num_comments: 12,
+        points: 11,
+        objectID: "7",
+      },
+      {
+        title: 'Gatsby',
+        url: 'https://gatsbyjs.com/',
+        author: 'Kyle Mathews',
+        num_comments: 4,
+        points: 5,
+        objectID: "8",
+      },
+      {
+        title: 'Bootstrap',
+        url: 'https://getbootstrap.com/',
+        author: 'Twitter',
+        num_comments: 20,
+        points: 15,
+        objectID: "9",
+      },
+      {
+        title: 'Tailwind CSS',
+        url: 'https://tailwindcss.com/',
+        author: 'Adam Wathan',
+        num_comments: 18,
+        points: 14,
+        objectID: "10",
+      },
+      {
+        title: 'Electron',
+        url: 'https://electronjs.org/',
+        author: 'GitHub',
+        num_comments: 7,
+        points: 6,
+        objectID: "11",
+      },
+    ]
+  )
 
   /*
   [current_state, function to change state], like read n write
@@ -260,6 +268,7 @@ function App() {
     // synthetic event: React's wrapper around the browser's native event (prevents native HTML auto reset when submitting): console.log(event);
     setSearchTerm(event.target.value); // sets "stateful value"
   }
+
   return (
     <div>
       <h1>My Hacker Stories</h1>
@@ -277,7 +286,11 @@ function App() {
 
       <hr /> {/*hr = line break*/}
 
-      <List list = {stories} filterKey={searchTerm}/>
+      <List
+        list = {stories}
+        deleteItem={(item : StoryType) => {setStories(stories.filter((m : StoryType) => (m !== item)));}}
+        filterKey={searchTerm}
+      />
 
     </div>
   );
