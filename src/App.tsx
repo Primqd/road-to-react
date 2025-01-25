@@ -33,21 +33,35 @@ both are fine to use: just make sure to do either consistently :)
 * although implicit return statemeent might introduce tedious refactorings???
 */
 
-type SearchProps = {id : string, value : any, type : string, onInputChange : CallbackFunc, children : any}; // value = same type as in "type"
-function InputWithLabel({ id, value, type, onInputChange, children} : SearchProps) {
+type SearchProps = {id : string, value : any, type : string, onInputChange : CallbackFunc, isFocused : boolean, children : any}; // value = same type as in "type"
+function InputWithLabel({ id, value, type, onInputChange, isFocused, children} : SearchProps) {
   // children = anything passed between the react compoonent (behaves like native html)
-
   // "props destructuring via object destructing" (works in js too!) const {searchTerm, onSearch} = props;
 
-  const handleBlur = (event : React.FocusEvent<HTMLInputElement>) => {
-    console.log(event);
-  }
+  // Imparitive React Implementation: used whenever ya use imparative (dom or library)
+  // useRef: persistent object that lasts over lifetime of react component, can be read and changed via .current (vs. useState: not rerendered on change)
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => { // performs focus on the element when component renders or isFocused changes via useEffect
+    if (isFocused && inputRef.current) {
+      // cause inputRef is passed to element's ref attribute, current property gives access to the element itself
+      inputRef.current.focus();
+    }
+  }, [isFocused]);
 
   return(
     <React.Fragment> {/*Same as <>: packager for elements, w/out introducing useless div*/}
       <label htmlFor={id}>{children}</label>
       &nbsp; {/*makes sure label and search always go together */}
-      <input type={type} id={id} name={id} onChange={onInputChange} onBlur={handleBlur} value = {value}>
+      <input
+        ref={inputRef} // ref given to JSX reserved "ref" property, thus element instance
+        id={id}
+        name={id}
+        type={type}
+        value = {value}
+        onChange={onInputChange}
+        autoFocus={isFocused}
+      >
       </input> {/*remember, pass function to values; not return value of function! value parameter forces sync with react state instead of letting component maintain its own independent state: controlled component*/}
 
       <p>Searching for <strong>{value}</strong></p>
@@ -175,6 +189,7 @@ function App() {
         value = {searchTerm}
         type = 'text'
         onInputChange = {handleSearch}
+        isFocused // same as isFocused = {true}
       >
         <strong>Search: </strong>
 
