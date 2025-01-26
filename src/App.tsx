@@ -9,6 +9,116 @@ type StoryType =  { // type for storing "stories"
   objectID: string;
 };
 
+// test data
+const initialStories : StoryType[] = [
+  {
+    title : 'React',
+    url : 'https://reactjs.org/',
+    author : 'Jordan Walke',
+    num_comments : 3,
+    points : 4,
+    objectID : "0",
+  },
+  {
+    title : 'Redux',
+    url : 'https://redus.js.org/',
+    author : 'Dan Abramov, Andrew Clark',
+    num_comments : 2,
+    points : 5,
+    objectID : "1",
+  },
+  {
+    title: 'Vue.js',
+    url: 'https://vuejs.org/',
+    author: 'Evan You',
+    num_comments: 8,
+    points: 7,
+    objectID: "2",
+  },
+  {
+    title: 'Angular',
+    url: 'https://angular.io/',
+    author: 'Google',
+    num_comments: 6,
+    points: 6,
+    objectID: "3",
+  },
+  {
+    title: 'Svelte',
+    url: 'https://svelte.dev/',
+    author: 'Rich Harris',
+    num_comments: 10,
+    points: 9,
+    objectID: "4",
+  },
+  {
+    title: 'Node.js',
+    url: 'https://nodejs.org/',
+    author: 'Ryan Dahl',
+    num_comments: 15,
+    points: 10,
+    objectID: "5",
+  },
+  {
+    title: 'Deno',
+    url: 'https://deno.land/',
+    author: 'Ryan Dahl',
+    num_comments: 5,
+    points: 8,
+    objectID: "6",
+  },
+  {
+    title: 'Next.js',
+    url: 'https://nextjs.org/',
+    author: 'Vercel',
+    num_comments: 12,
+    points: 11,
+    objectID: "7",
+  },
+  {
+    title: 'Gatsby',
+    url: 'https://gatsbyjs.com/',
+    author: 'Kyle Mathews',
+    num_comments: 4,
+    points: 5,
+    objectID: "8",
+  },
+  {
+    title: 'Bootstrap',
+    url: 'https://getbootstrap.com/',
+    author: 'Twitter',
+    num_comments: 20,
+    points: 15,
+    objectID: "9",
+  },
+  {
+    title: 'Tailwind CSS',
+    url: 'https://tailwindcss.com/',
+    author: 'Adam Wathan',
+    num_comments: 18,
+    points: 14,
+    objectID: "10",
+  },
+  {
+    title: 'Electron',
+    url: 'https://electronjs.org/',
+    author: 'GitHub',
+    num_comments: 7,
+    points: 6,
+    objectID: "11",
+  },
+]
+
+// simulating async data w/ Promise w/ original stories, replace with API later
+const getAsyncStories = () =>
+  new Promise<{data : {stories : StoryType[]}}>((resolve) => 
+  setTimeout( // simulates data delay for 500ms (0.5s)
+    () => resolve({ data : {stories : initialStories}}),
+    500
+  )
+);
+
+
 // hooks should always start with 'use'
 const useStorageState = (key : string, initialState : string) : [string, React.Dispatch<React.SetStateAction<string>>] => { // custom react hook that acts like useState but links with storage
   const [value, setValue] = React.useState(
@@ -97,8 +207,8 @@ function Item({item, deleteItem, index} : ItemProps) {
       <span>{index}</span> {/*index of item in list!*/}
       <input
         type = "button"
-        value = "remove this element"
-        onClick={() => (deleteItem(item))}
+        value = "Delete"
+        onClick={() => (deleteItem(item))} // or onClick={deleteItem.bind(null, item)}: OK to use inline handlers if they don't obscure crit. implement details, otherwise no
       >
       </input>
     </li>
@@ -143,106 +253,13 @@ function App() {
   */
 
 
-  const [stories, setStories] = React.useState(
-    [
-      {
-        title : 'React',
-        url : 'https://reactjs.org/',
-        author : 'Jordan Walke',
-        num_comments : 3,
-        points : 4,
-        objectID : "0",
-      },
-      {
-        title : 'Redux',
-        url : 'https://redus.js.org/',
-        author : 'Dan Abramov, Andrew Clark',
-        num_comments : 2,
-        points : 5,
-        objectID : "1",
-      },
-      {
-        title: 'Vue.js',
-        url: 'https://vuejs.org/',
-        author: 'Evan You',
-        num_comments: 8,
-        points: 7,
-        objectID: "2",
-      },
-      {
-        title: 'Angular',
-        url: 'https://angular.io/',
-        author: 'Google',
-        num_comments: 6,
-        points: 6,
-        objectID: "3",
-      },
-      {
-        title: 'Svelte',
-        url: 'https://svelte.dev/',
-        author: 'Rich Harris',
-        num_comments: 10,
-        points: 9,
-        objectID: "4",
-      },
-      {
-        title: 'Node.js',
-        url: 'https://nodejs.org/',
-        author: 'Ryan Dahl',
-        num_comments: 15,
-        points: 10,
-        objectID: "5",
-      },
-      {
-        title: 'Deno',
-        url: 'https://deno.land/',
-        author: 'Ryan Dahl',
-        num_comments: 5,
-        points: 8,
-        objectID: "6",
-      },
-      {
-        title: 'Next.js',
-        url: 'https://nextjs.org/',
-        author: 'Vercel',
-        num_comments: 12,
-        points: 11,
-        objectID: "7",
-      },
-      {
-        title: 'Gatsby',
-        url: 'https://gatsbyjs.com/',
-        author: 'Kyle Mathews',
-        num_comments: 4,
-        points: 5,
-        objectID: "8",
-      },
-      {
-        title: 'Bootstrap',
-        url: 'https://getbootstrap.com/',
-        author: 'Twitter',
-        num_comments: 20,
-        points: 15,
-        objectID: "9",
-      },
-      {
-        title: 'Tailwind CSS',
-        url: 'https://tailwindcss.com/',
-        author: 'Adam Wathan',
-        num_comments: 18,
-        points: 14,
-        objectID: "10",
-      },
-      {
-        title: 'Electron',
-        url: 'https://electronjs.org/',
-        author: 'GitHub',
-        num_comments: 7,
-        points: 6,
-        objectID: "11",
-      },
-    ]
-  )
+  const [stories, setStories] = React.useState<StoryType[]>([])
+
+  React.useEffect(() => {
+    getAsyncStories().then(result => {
+      setStories(result.data.stories)
+    });
+  }, []); // empty dependency list = sideffect only runs once: when the component renders for the first time
 
   /*
   [current_state, function to change state], like read n write
