@@ -9,6 +9,15 @@ type StoryType =  { // type for storing "stories"
   objectID: string;
 };
 
+enum ActionType { // for dispatch actions
+  SET_STORIES,
+  REMOVE_STORY,
+}
+
+type Action =
+  | {type : ActionType.SET_STORIES; payload : StoryType[]}
+  | {type : ActionType.REMOVE_STORY; payload : StoryType}
+
 // test data
 const initialStories : StoryType[] = [
   {
@@ -109,6 +118,18 @@ const initialStories : StoryType[] = [
   },
 ]
 
+
+// reducer function: state and action (see https://www.robinwieruch.de/javascript-reducer/)
+const storiesReducer = (state : StoryType[], {type, payload} : Action) => {
+  switch(type) {
+    case ActionType.SET_STORIES : return payload;
+    case ActionType.REMOVE_STORY : return state.filter(
+      (story) => (payload as StoryType).objectID !== story.objectID
+    );
+    default : throw new Error();
+  }
+}
+
 // simulating async data w/ Promise w/ original stories, replace with API later
 const getAsyncStories = () =>
   new Promise<{data : {stories : StoryType[]}}>((resolve) => 
@@ -117,7 +138,6 @@ const getAsyncStories = () =>
     500
   )
 );
-
 
 // hooks should always start with 'use'
 const useStorageState = (key : string, initialState : string) : [string, React.Dispatch<React.SetStateAction<string>>] => { // custom react hook that acts like useState but links with storage
@@ -252,12 +272,26 @@ function App() {
   key attribute used for efficent rerender: when have to rerender, checks whether item has changed; can efficently exchanged changed item w/ key identifier
   */
 
-
-  const [stories, setStories] = React.useState<StoryType[]>([])
+  const [stories, dispatchStories] = React.useReducer(
+    storiesReducer, // "state setter" function
+    [] as StoryType[] // initial state: as directly states type
+  );
+  
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [hasError, setHasError] = React.useState<boolean>(false);
 
   React.useEffect(() => {
-    getAsyncStories().then(result => {
-      setStories(result.data.stories)
+    setLoading(true); // begining to load
+    getAsyncStories()
+    .then(result => { // resolves properly
+      dispatchStories({
+        type : ActionType.SET_STORIES,
+        payload : result.data.stories,
+      });
+      setLoading(false); // finished loading
+    })
+    .catch(() => { // error
+      setHasError(true);
     });
   }, []); // empty dependency list = sideffect only runs once: when the component renders for the first time
 
@@ -303,12 +337,22 @@ function App() {
 
       <hr /> {/*hr = line break*/}
 
-      <List
-        list = {stories}
-        deleteItem={(item : StoryType) => {setStories(stories.filter((m : StoryType) => (m !== item)));}}
-        filterKey={searchTerm}
-      />
+      {hasError && <p>Something went wrong...</p>}
 
+      {loading ?
+        (<p>Loading...</p>) 
+        :
+        <List
+        list = {stories!} // ! = trust me it's not undefined :)
+        deleteItem={(item : StoryType) => {
+          dispatchStories({
+            type : ActionType.REMOVE_STORY,
+            payload : item,
+          });
+        }}
+        filterKey={searchTerm}
+        />
+      }
     </div>
   );
 }
