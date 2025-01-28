@@ -1,5 +1,8 @@
 import * as React from 'react';
 
+// api endpoint to fetcch popular tech stories for a certain query
+const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search'; 
+
 type StoryType =  { // type for storing "stories"
   title: string;
   url: string;
@@ -10,134 +13,69 @@ type StoryType =  { // type for storing "stories"
 };
 
 enum ActionType { // for dispatch actions
-  SET_STORIES,
+  STORIES_FETCH_INIT, // beginning to fetch stories
+  STORIES_FETCH_SUCCESS, // success: set stories
+  STORIES_FETCH_FAILURE, // failure: error encountered
   REMOVE_STORY,
 }
 
 type Action =
-  | {type : ActionType.SET_STORIES; payload : StoryType[]}
+  | {type : ActionType.STORIES_FETCH_INIT}
+  | {type : ActionType.STORIES_FETCH_SUCCESS; payload : StoryType[]}
+  | {type : ActionType.STORIES_FETCH_FAILURE}
   | {type : ActionType.REMOVE_STORY; payload : StoryType}
 
-// test data
-const initialStories : StoryType[] = [
-  {
-    title : 'React',
-    url : 'https://reactjs.org/',
-    author : 'Jordan Walke',
-    num_comments : 3,
-    points : 4,
-    objectID : "0",
-  },
-  {
-    title : 'Redux',
-    url : 'https://redus.js.org/',
-    author : 'Dan Abramov, Andrew Clark',
-    num_comments : 2,
-    points : 5,
-    objectID : "1",
-  },
-  {
-    title: 'Vue.js',
-    url: 'https://vuejs.org/',
-    author: 'Evan You',
-    num_comments: 8,
-    points: 7,
-    objectID: "2",
-  },
-  {
-    title: 'Angular',
-    url: 'https://angular.io/',
-    author: 'Google',
-    num_comments: 6,
-    points: 6,
-    objectID: "3",
-  },
-  {
-    title: 'Svelte',
-    url: 'https://svelte.dev/',
-    author: 'Rich Harris',
-    num_comments: 10,
-    points: 9,
-    objectID: "4",
-  },
-  {
-    title: 'Node.js',
-    url: 'https://nodejs.org/',
-    author: 'Ryan Dahl',
-    num_comments: 15,
-    points: 10,
-    objectID: "5",
-  },
-  {
-    title: 'Deno',
-    url: 'https://deno.land/',
-    author: 'Ryan Dahl',
-    num_comments: 5,
-    points: 8,
-    objectID: "6",
-  },
-  {
-    title: 'Next.js',
-    url: 'https://nextjs.org/',
-    author: 'Vercel',
-    num_comments: 12,
-    points: 11,
-    objectID: "7",
-  },
-  {
-    title: 'Gatsby',
-    url: 'https://gatsbyjs.com/',
-    author: 'Kyle Mathews',
-    num_comments: 4,
-    points: 5,
-    objectID: "8",
-  },
-  {
-    title: 'Bootstrap',
-    url: 'https://getbootstrap.com/',
-    author: 'Twitter',
-    num_comments: 20,
-    points: 15,
-    objectID: "9",
-  },
-  {
-    title: 'Tailwind CSS',
-    url: 'https://tailwindcss.com/',
-    author: 'Adam Wathan',
-    num_comments: 18,
-    points: 14,
-    objectID: "10",
-  },
-  {
-    title: 'Electron',
-    url: 'https://electronjs.org/',
-    author: 'GitHub',
-    num_comments: 7,
-    points: 6,
-    objectID: "11",
-  },
-]
+type State = {// curent state of stories
+  data : StoryType[],
+  isLoading : boolean,
+  isError : boolean,
+}
 
 
 // reducer function: state and action (see https://www.robinwieruch.de/javascript-reducer/)
-const storiesReducer = (state : StoryType[], {type, payload} : Action) => {
-  switch(type) {
-    case ActionType.SET_STORIES : return payload;
-    case ActionType.REMOVE_STORY : return state.filter(
-      (story) => (payload as StoryType).objectID !== story.objectID
-    );
+const storiesReducer = (state : State, action : Action) => {
+  switch(action.type) {
+    case ActionType.STORIES_FETCH_INIT:
+      return {
+        ...state,
+        isLoading : true,
+        isError : false,
+      };
+    case ActionType.STORIES_FETCH_SUCCESS:
+      return {
+        ...state,
+        isLoading : false,
+        isError : false,
+        data : action.payload,
+      };
+    case ActionType.STORIES_FETCH_FAILURE:
+      return {
+        ...state,
+        isLoading : false,
+        isError : true, 
+      };
+    case ActionType.REMOVE_STORY:
+      return {
+        ...state,
+        data : state.data.filter(
+          (story) => action.payload.objectID !== story.objectID
+        ),
+      };
     default : throw new Error();
   }
 }
 
+/*
 // simulating async data w/ Promise w/ original stories, replace with API later
 const getAsyncStories = () =>
-  new Promise<{data : {stories : StoryType[]}}>((resolve) => 
+  new Promise<{data : {stories : StoryType[]}}>((resolve, reject) => 
   setTimeout( // simulates data delay for 500ms (0.5s)
     () => resolve({ data : {stories : initialStories}}),
+    // reject,
     500
   )
 );
+*/
 
 // hooks should always start with 'use'
 const useStorageState = (key : string, initialState : string) : [string, React.Dispatch<React.SetStateAction<string>>] => { // custom react hook that acts like useState but links with storage
@@ -216,6 +154,7 @@ rest at left side of an assignment, spread occurs on right of assignment
 */
 function Item({item, deleteItem, index} : ItemProps) {
   // console.log("Item component rendered!")
+  // console.log(item.objectID);
   return (
     <li key = {item.objectID}>
       <span>
@@ -224,6 +163,7 @@ function Item({item, deleteItem, index} : ItemProps) {
       <span>{item.author} </span>
       <span>{item.num_comments} </span>
       <span>{item.points} </span>
+      <span>{item.objectID}</span>
       <span>{index}</span> {/*index of item in list!*/}
       <input
         type = "button"
@@ -240,15 +180,13 @@ child component of app, leaf component (doesn't render any other components)
 component similar idea to 'class' in other
 we use components as elements anywhere else, generate instances of List
 */
-type ListProps = { list: StoryType[], deleteItem : (item : StoryType) => void, filterKey : string};
-function List({list, deleteItem, filterKey} : ListProps) { // props: everything we pass down from parent to child, cannot be modified (const)
+type ListProps = { list: StoryType[], deleteItem : (item : StoryType) => void};
+function List({list, deleteItem} : ListProps) { // props: everything we pass down from parent to child, cannot be modified (const)
   // console.log("List component rendered!")
-  var searchedList : StoryType[] = list.filter((item : StoryType) => (item.title.toLowerCase().includes(filterKey.toLowerCase()))); // new list, filters by if the title contains the filterKey as a substring
-
   return (
   <ul>
     {/*each DIRECT decendant of ul needs key: even component!*/}
-    {searchedList.map((item : StoryType , index : number) => (
+    {list.map((item : StoryType , index : number) => (
       <Item key={item.title} item = {item} deleteItem={deleteItem} index = {index} />
       ))}
   </ul>
@@ -274,24 +212,22 @@ function App() {
 
   const [stories, dispatchStories] = React.useReducer(
     storiesReducer, // "state setter" function
-    [] as StoryType[] // initial state: as directly states type
+    { data : [] as StoryType[], isLoading : false, isError : false},
   );
-  
-  const [loading, setLoading] = React.useState<boolean>(true);
-  const [hasError, setHasError] = React.useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useStorageState('search', ''); // custom React hook! see "useStorageState"
 
   React.useEffect(() => {
-    setLoading(true); // begining to load
-    getAsyncStories()
-    .then(result => { // resolves properly
+    dispatchStories({ type : ActionType.STORIES_FETCH_INIT })
+    fetch(`${API_ENDPOINT}`) // fetch stories about react
+    .then((result) => result.json()) // translate fetch api into json
+    .then((result) => { // resolves properly
       dispatchStories({
-        type : ActionType.SET_STORIES,
-        payload : result.data.stories,
+        type : ActionType.STORIES_FETCH_SUCCESS,
+        payload : result.hits,
       });
-      setLoading(false); // finished loading
     })
     .catch(() => { // error
-      setHasError(true);
+      dispatchStories({ type : ActionType.STORIES_FETCH_FAILURE })
     });
   }, []); // empty dependency list = sideffect only runs once: when the component renders for the first time
 
@@ -302,8 +238,6 @@ function App() {
     localStorage.getItem('search') || ''
   ); "stateful value": may change over time. when changed, causes rerender of children up to parent where stateful value is defined
   */
-  
-  const [searchTerm, setSearchTerm] = useStorageState('search', ''); // custom React hook! see "useStorageState"
 
   /*
   "useEffect" hook: first arg is function that runs side effect, second arg is "dependency list"
@@ -337,20 +271,19 @@ function App() {
 
       <hr /> {/*hr = line break*/}
 
-      {hasError && <p>Something went wrong...</p>}
+      {stories.isError && <p>Something went wrong...</p>}
 
-      {loading ?
+      {stories.isLoading ?
         (<p>Loading...</p>) 
         :
         <List
-        list = {stories!} // ! = trust me it's not undefined :)
+          list={stories.data.filter((story) => story.title ? story.title.toLowerCase().includes(searchTerm.toLowerCase()) : false)}
         deleteItem={(item : StoryType) => {
           dispatchStories({
             type : ActionType.REMOVE_STORY,
             payload : item,
           });
         }}
-        filterKey={searchTerm}
         />
       }
     </div>
