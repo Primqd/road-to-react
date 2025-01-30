@@ -216,9 +216,17 @@ function App() {
   );
   const [searchTerm, setSearchTerm] = useStorageState('search', ''); // custom React hook! see "useStorageState"
 
-  React.useEffect(() => {
+  /*
+  wraps useEffect code into useCallback hook, invoke in useEffect
+  benefit?
+  - reusability! useCallback creates memoized function on dependeyc list change (triggers useEffect)
+  - no useCallback = new handleFetchStories created on each rerender  (poo poo run time)
+    - new handleFetchStories on rerender -> retriggers useEffect -> inf loop
+  - useCallback only changes the func when one of its dep. values changes: thus, no useEffect loop
+  */
+  const handleFetchStories = React.useCallback(() => {
     dispatchStories({ type : ActionType.STORIES_FETCH_INIT })
-    fetch(`${API_ENDPOINT}`) // fetch stories about react
+    fetch(searchTerm ? `${API_ENDPOINT}?query=${searchTerm}` : `${API_ENDPOINT}`) // fetch stories based on query (main page if no query)
     .then((result) => result.json()) // translate fetch api into json
     .then((result) => { // resolves properly
       dispatchStories({
@@ -229,7 +237,13 @@ function App() {
     .catch(() => { // error
       dispatchStories({ type : ActionType.STORIES_FETCH_FAILURE })
     });
-  }, []); // empty dependency list = sideffect only runs once: when the component renders for the first time
+  }, [searchTerm]); 
+
+  React.useEffect(() => {
+    handleFetchStories();
+  }, [handleFetchStories]);
+  
+  // empty dependency list = sideffect only runs once: when the component renders for the first time
 
   /*
   [current_state, function to change state], like read n write
@@ -277,7 +291,7 @@ function App() {
         (<p>Loading...</p>) 
         :
         <List
-          list={stories.data.filter((story) => story.title ? story.title.toLowerCase().includes(searchTerm.toLowerCase()) : false)}
+          list={stories.data.filter((story) => story.title ? story.title : false)}
         deleteItem={(item : StoryType) => {
           dispatchStories({
             type : ActionType.REMOVE_STORY,
