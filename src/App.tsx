@@ -100,8 +100,16 @@ both are fine to use: just make sure to do either consistently :)
 * although implicit return statemeent might introduce tedious refactorings???
 */
 
-type SearchProps = {id : string, value : any, type : string, onInputChange : (event : React.ChangeEvent<HTMLInputElement>) => void, isFocused : boolean, children : any}; // value = same type as in "type"
-function InputWithLabel({ id, value, type, onInputChange, isFocused, children} : SearchProps) {
+type SearchProps = {
+  id : string,
+  value : any,
+  type : string,
+  onInputChange : (event : React.ChangeEvent<HTMLInputElement>) => void,
+  submitInput : React.KeyboardEventHandler<HTMLInputElement>
+  isFocused : boolean,
+  children : any
+}; // value = same type as in "type"
+function InputWithLabel({ id, value, type, onInputChange, submitInput, isFocused, children} : SearchProps) {
   // children = anything passed between the react compoonent (behaves like native html)
   // "props destructuring via object destructing" (works in js too!) const {searchTerm, onSearch} = props;
 
@@ -128,6 +136,7 @@ function InputWithLabel({ id, value, type, onInputChange, isFocused, children} :
         value = {value}
         onChange={onInputChange}
         autoFocus={isFocused}
+        onKeyDown={submitInput}
       >
       </input> {/*remember, pass function to values; not return value of function! value parameter forces sync with react state instead of letting component maintain its own independent state: controlled component*/}
 
@@ -215,6 +224,9 @@ function App() {
     { data : [] as StoryType[], isLoading : false, isError : false},
   );
   const [searchTerm, setSearchTerm] = useStorageState('search', ''); // custom React hook! see "useStorageState"
+  const [url, setUrl] = React.useState(
+    `${API_ENDPOINT}`
+  );
 
   /*
   wraps useEffect code into useCallback hook, invoke in useEffect
@@ -226,7 +238,7 @@ function App() {
   */
   const handleFetchStories = React.useCallback(() => {
     dispatchStories({ type : ActionType.STORIES_FETCH_INIT })
-    fetch(searchTerm ? `${API_ENDPOINT}?query=${searchTerm}` : `${API_ENDPOINT}`) // fetch stories based on query (main page if no query)
+    fetch(url)
     .then((result) => result.json()) // translate fetch api into json
     .then((result) => { // resolves properly
       dispatchStories({
@@ -237,7 +249,7 @@ function App() {
     .catch(() => { // error
       dispatchStories({ type : ActionType.STORIES_FETCH_FAILURE })
     });
-  }, [searchTerm]); 
+  }, [url]); 
 
   React.useEffect(() => {
     handleFetchStories();
@@ -263,9 +275,13 @@ function App() {
   */
 
   // callback handler: event handler that allows "communication" between parent and child components (pass as prop to child, lifting state)
-  const handleSearch = (event : React.ChangeEvent<HTMLInputElement>) => { // html input type
+  const handleSearchInput = (event : React.ChangeEvent<HTMLInputElement>) => { // html input type
     // synthetic event: React's wrapper around the browser's native event (prevents native HTML auto reset when submitting): console.log(event);
     setSearchTerm(event.target.value); // sets "stateful value"
+  }
+
+  const handleSearchSubmit = () => { // no event: button conditional needs no event
+    setUrl(searchTerm ? `${API_ENDPOINT}?query=${searchTerm}` : `${API_ENDPOINT}`);  // fetch stories based on query (main page if no query)
   }
 
   return (
@@ -276,12 +292,19 @@ function App() {
         id = 'search'
         value = {searchTerm}
         type = 'text'
-        onInputChange = {handleSearch}
+        onInputChange = {handleSearchInput}
+        submitInput={(e) => e.key === 'Enter' ? handleSearchSubmit() : ''}
         isFocused // same as isFocused = {true}
       >
         <strong>Search: </strong>
-
       </InputWithLabel>
+      <button
+        type = "button"
+        disabled={!searchTerm}
+        onClick={handleSearchSubmit}
+      >
+        Submit
+      </button>
 
       <hr /> {/*hr = line break*/}
 
