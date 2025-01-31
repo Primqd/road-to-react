@@ -1,4 +1,5 @@
 import * as React from 'react';
+import axios from 'axios'; // axios: stable API fetch library (replaces browser fetch: not always supported by older browsers)
 
 // api endpoint to fetcch popular tech stories for a certain query
 const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search'; 
@@ -225,8 +226,18 @@ function App() {
   );
   const [searchTerm, setSearchTerm] = useStorageState('search', ''); // custom React hook! see "useStorageState"
   const [url, setUrl] = React.useState(
-    `${API_ENDPOINT}`
+    searchTerm ? `${API_ENDPOINT}?query=${searchTerm}` : `${API_ENDPOINT}`
   );
+
+  // callback handler: event handler that allows "communication" between parent and child components (pass as prop to child, lifting state)
+  const handleSearchInput = (event : React.ChangeEvent<HTMLInputElement>) => { // html input type
+    // synthetic event: React's wrapper around the browser's native event (prevents native HTML auto reset when submitting): console.log(event);
+    setSearchTerm(event.target.value); // sets "stateful value"
+  }
+
+  const handleSearchSubmit = () => { // no event: button conditional needs no event
+    setUrl(searchTerm ? `${API_ENDPOINT}?query=${searchTerm}` : `${API_ENDPOINT}`);  // fetch stories based on query (main page if no query)
+  }
 
   /*
   wraps useEffect code into useCallback hook, invoke in useEffect
@@ -238,12 +249,13 @@ function App() {
   */
   const handleFetchStories = React.useCallback(() => {
     dispatchStories({ type : ActionType.STORIES_FETCH_INIT })
-    fetch(url)
-    .then((result) => result.json()) // translate fetch api into json
+    axios
+    .get(url)
+    // .then((result) => result.json()) // translate fetch api into json: axios already does this!
     .then((result) => { // resolves properly
       dispatchStories({
         type : ActionType.STORIES_FETCH_SUCCESS,
-        payload : result.hits,
+        payload : result.data.hits,
       });
     })
     .catch(() => { // error
@@ -273,16 +285,6 @@ function App() {
     localStorage.setItem('search', searchTerm);
   }, [searchTerm]);
   */
-
-  // callback handler: event handler that allows "communication" between parent and child components (pass as prop to child, lifting state)
-  const handleSearchInput = (event : React.ChangeEvent<HTMLInputElement>) => { // html input type
-    // synthetic event: React's wrapper around the browser's native event (prevents native HTML auto reset when submitting): console.log(event);
-    setSearchTerm(event.target.value); // sets "stateful value"
-  }
-
-  const handleSearchSubmit = () => { // no event: button conditional needs no event
-    setUrl(searchTerm ? `${API_ENDPOINT}?query=${searchTerm}` : `${API_ENDPOINT}`);  // fetch stories based on query (main page if no query)
-  }
 
   return (
     <div>
