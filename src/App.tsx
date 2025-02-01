@@ -106,11 +106,10 @@ type SearchProps = {
   value : any,
   type : string,
   onInputChange : (event : React.ChangeEvent<HTMLInputElement>) => void,
-  submitInput : React.KeyboardEventHandler<HTMLInputElement>
   isFocused : boolean,
   children : any
 }; // value = same type as in "type"
-function InputWithLabel({ id, value, type, onInputChange, submitInput, isFocused, children} : SearchProps) {
+function InputWithLabel({ id, value, type, onInputChange, isFocused, children} : SearchProps) {
   // children = anything passed between the react compoonent (behaves like native html)
   // "props destructuring via object destructing" (works in js too!) const {searchTerm, onSearch} = props;
 
@@ -137,7 +136,6 @@ function InputWithLabel({ id, value, type, onInputChange, submitInput, isFocused
         value = {value}
         onChange={onInputChange}
         autoFocus={isFocused}
-        onKeyDown={submitInput}
       >
       </input> {/*remember, pass function to values; not return value of function! value parameter forces sync with react state instead of letting component maintain its own independent state: controlled component*/}
 
@@ -203,6 +201,33 @@ function List({list, deleteItem} : ListProps) { // props: everything we pass dow
   );
 }
 
+type FormProps = {
+  searchTerm : string,
+  onSearchInput : (event : React.ChangeEvent<HTMLInputElement>) => void,
+  onSearchSubmit : (event : React.FormEvent<HTMLFormElement>) => void,
+}
+function SearchForm({searchTerm, onSearchInput, onSearchSubmit} : FormProps) {
+  return (
+    <form onSubmit = {onSearchSubmit}>
+      <InputWithLabel
+        id = 'search'
+        value = {searchTerm}
+        type = 'text'
+        onInputChange = {onSearchInput}
+        isFocused // same as isFocused = {true}
+      >
+        <strong>Search: </strong>
+      </InputWithLabel>
+      <button
+        type = "button"
+        disabled={!searchTerm}
+      >
+        Submit
+      </button>
+    </form>
+  );
+}
+
 // entry point or root component; root of component tree
 function App() {
   /*
@@ -235,8 +260,10 @@ function App() {
     setSearchTerm(event.target.value); // sets "stateful value"
   }
 
-  const handleSearchSubmit = () => { // no event: button conditional needs no event
+  const handleSearchSubmit = (event : React.FormEvent<HTMLFormElement>) => { // no event: button conditional needs no event
     setUrl(searchTerm ? `${API_ENDPOINT}?query=${searchTerm}` : `${API_ENDPOINT}`);  // fetch stories based on query (main page if no query)
+
+    event.preventDefault(); // prevents form element reload
   }
 
   /*
@@ -247,8 +274,27 @@ function App() {
     - new handleFetchStories on rerender -> retriggers useEffect -> inf loop
   - useCallback only changes the func when one of its dep. values changes: thus, no useEffect loop
   */
+
+  /*
+  handleFetchStories w/ async await instead
+
+  const handleFetchStories = React.useCallback(async () => { // async makes function return a promise
+    dispatchStories({ type : ActionType.STORIES_FETCH_INIT });
+    try {
+      const result = await axios.get(url); // function waits for promise
+      dispatchStories({
+        type : ActionType.STORIES_FETCH_SUCCESS,
+        payload : result.data.hits,
+      });
+    } catch { // error
+      dispatchStories({ type : ActionType.STORIES_FETCH_FAILURE });
+    }
+  }, [url]);
+  */
+
+
   const handleFetchStories = React.useCallback(() => {
-    dispatchStories({ type : ActionType.STORIES_FETCH_INIT })
+    dispatchStories({ type : ActionType.STORIES_FETCH_INIT });
     axios
     .get(url)
     // .then((result) => result.json()) // translate fetch api into json: axios already does this!
@@ -290,23 +336,11 @@ function App() {
     <div>
       <h1>My Hacker Stories</h1>
 
-      <InputWithLabel
-        id = 'search'
-        value = {searchTerm}
-        type = 'text'
-        onInputChange = {handleSearchInput}
-        submitInput={(e) => e.key === 'Enter' ? handleSearchSubmit() : ''}
-        isFocused // same as isFocused = {true}
-      >
-        <strong>Search: </strong>
-      </InputWithLabel>
-      <button
-        type = "button"
-        disabled={!searchTerm}
-        onClick={handleSearchSubmit}
-      >
-        Submit
-      </button>
+      <SearchForm
+        searchTerm={searchTerm}
+        onSearchInput={handleSearchInput}
+        onSearchSubmit={handleSearchSubmit}
+      />
 
       <hr /> {/*hr = line break*/}
 
